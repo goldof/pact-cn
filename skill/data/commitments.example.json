@@ -1,0 +1,1 @@
+{"commitments":[{"confirm_days":0,"current_price":null,"falsify_condition":"什么证据出现，说明我错了？（写具体、可观察）","falsify_price":10.0,"id":"c-demo","logic":"一句话买入逻辑：为什么当时觉得它行。","name":"示例标的","review_date":"2026-12-31","review_note":null,"state":"持有中","ticker":"600000","timeline":[],"variables":"跟踪变量1 / 跟踪变量2"}]}

@@ -1,0 +1,2 @@
+untrusted comment: Pact 守约官方签名公钥（2026-09-30 生成，密钥 ID C015BAA2CE0E93FF）
+RWT/kw7OoroVwFKuGfZ/0/P0MMEo64PkLx937PoXbpewOk3HzeToMk1e

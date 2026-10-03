@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>承诺看板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+<style>
+.disclaimer{margin:28px auto 8px;max-width:900px;text-align:center;font-size:12px;color:#8a8a96;letter-spacing:.02em;}
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f2f5f4; --paper:#ffffff; --paper2:#edf2f0; --ink:#12231f;
+  --muted:#52645f; --faint:#74847f; --line:#cbd7d3; --line-strong:#9fb1ab;
+  --holding:#087f68; --holding-soft:#d9eee8;
+  --near:#a85610; --near-soft:#fff0da;
+  --review:#9b3e2d; --review-soft:#f8e3de;
+  --archived:#59635f; --archived-soft:#e5e9e7;
+  --warnbar:#fff3d6; --warnink:#7a4d00;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1513; --paper:#15211e; --paper2:#101b18; --ink:#eef8f5;
+    --muted:#afc0bb; --faint:#91a49e; --line:#324740; --line-strong:#4a625a;
+    --holding:#55cdb0; --holding-soft:#0e2b25;
+    --near:#f0a258; --near-soft:#2c1f0e;
+    --review:#f08a74; --review-soft:#2c1410;
+    --archived:#aeb9b5; --archived-soft:#1d2422;
+    --warnbar:#2c220e; --warnink:#f0c46a;
+  }
+}
+body{
+  font-family:"Noto Sans SC",sans-serif;color:var(--ink);
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:44px 44px;font-size:14px;line-height:1.6;
+}
+.page{max-width:1440px;margin:0 auto;padding:0 28px 80px}
+.notice{background:var(--warnbar);color:var(--warnink);padding:10px 28px;font-size:12.5px;border-bottom:1px solid var(--line-strong)}
+.notice b{font-weight:800}
+.privacy-note{display:flex;gap:10px;align-items:flex-start;border-left:3px solid var(--holding);background:var(--paper);padding:10px 14px;margin:14px 0;font-size:12.5px;color:var(--muted)}
+.privacy-note b{color:var(--ink)}
+.board-head{padding:34px 0 8px;border-bottom:2px solid var(--ink);margin-bottom:6px}
+.board-head h1{font-family:"Noto Serif SC",serif;font-weight:700;font-size:clamp(30px,4vw,52px);letter-spacing:-.02em}
+.board-head .sub{color:var(--muted);font-size:13px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.test-badge{display:inline-block;background:var(--near-soft);color:var(--near);border:1px solid var(--near);font-size:11px;font-weight:700;padding:1px 8px;letter-spacing:.06em}
+.progress-key{color:var(--faint);font-size:12px;letter-spacing:.14em;margin:14px 0 4px}
+.reminder-slot{margin:18px 0 0}
+.remind-banner{background:var(--paper);border:1px solid var(--review);border-top:6px solid var(--review);padding:16px 18px;margin-bottom:12px;box-shadow:0 12px 36px rgba(0,0,0,.10)}
+.remind-tag{color:var(--review);font-size:11px;font-weight:800;letter-spacing:.1em;margin-bottom:6px}
+.remind-q{font-family:"Noto Serif SC",serif;font-size:clamp(20px,2.6vw,30px);font-weight:700;margin-bottom:10px}
+.recall{background:var(--paper2);border-left:3px solid var(--review);padding:10px 14px;font-size:13px;color:var(--muted)}
+.recall b{color:var(--ink)}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start;margin-top:18px}
+@media(max-width:1120px){.board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.board{grid-template-columns:1fr}}
+.column{--status:var(--holding);--status-soft:var(--holding-soft);border-top:4px solid var(--status);background:color-mix(in srgb,var(--paper) 88%,var(--status) 12%);padding:12px}
+.column[data-s="near"]{--status:var(--near);--status-soft:var(--near-soft)}
+.column[data-s="review"]{--status:var(--review);--status-soft:var(--review-soft)}
+.column[data-s="archived"]{--status:var(--archived);--status-soft:var(--archived-soft)}
+.col-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.col-head h2{font-size:13px;font-weight:800;letter-spacing:.04em}
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border:1px solid var(--status);color:var(--status);font-size:12px;font-weight:700}
+.cards{display:grid;gap:10px;min-height:180px}
+.empty{color:var(--faint);font-size:12.5px;text-align:center;padding:40px 0;border:1px dashed var(--line)}
+.commitment-card{background:var(--paper);border:1px solid var(--line);box-shadow:0 7px 20px rgba(0,0,0,.06);padding:13px}
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.card-kicker{font-size:11px;color:var(--faint);letter-spacing:.08em;font-weight:600}
+.card-tag{font-size:10.5px;font-weight:700;padding:1px 7px;background:var(--paper2);color:var(--muted);border:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:800;margin-bottom:8px}
+.card-title .ticker{color:var(--faint);font-weight:500;font-size:12px;margin-left:6px}
+.card-fact{display:grid;grid-template-columns:64px 1fr;row-gap:5px;font-size:12.5px;margin-bottom:8px}
+.card-fact dt{color:var(--faint)}
+.card-fact dd{color:var(--ink)}
+.card-fact dd.dist b{font-weight:800}
+.card-date{border-top:1px solid var(--line);padding-top:8px;font-size:12px;color:var(--muted);margin-bottom:8px}
+.card-foot{display:flex;gap:8px;align-items:center}
+.tl-btn{flex:1;background:none;border:1px solid var(--status);color:var(--status);font-size:12.5px;font-weight:600;padding:7px 0;cursor:pointer;font-family:inherit}
+.tl-btn:hover{background:var(--status-soft)}
+.wait-chip{font-size:12px;color:var(--review);border:1px dashed var(--review);padding:6px 10px}
+.archived-mark{display:flex;gap:8px;align-items:flex-start;background:var(--archived-soft);padding:8px 10px;font-size:12.5px;color:var(--muted)}
+.timeline{display:none;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.timeline.open{display:block}
+.timeline li{list-style:none;font-size:12px;color:var(--muted);padding:5px 0 5px 12px;border-left:2px solid var(--line-strong);margin-left:4px;margin-bottom:4px}
+.timeline li .t{color:var(--faint);font-size:11px;display:block}
+.foot{margin-top:44px;border-top:1px solid var(--line-strong);padding-top:14px;font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="notice"><b id="noticeMain"></b>本看板只展示跟踪过程，不提供判断。</div>
+<div class="page">
+  <div class="privacy-note"><span>🔒</span><span><b>数据不出端：</b>承诺内容只在引擎本地跟踪，不上传、不聚合。<b>系统不替你判断</b>——判断永远留给用户。<span id="virtualOnly">测试阶段所有数据均为虚拟。</span></span></div>
+  <div class="board-head">
+    <h1>承诺看板</h1>
+    <div class="sub"><span id="subName"></span><span id="syncTime"></span><span class="test-badge" id="testBadge">测试</span></div>
+  </div>
+  <div class="progress-key">写下 — 回来 — 归档</div>
+  <div class="reminder-slot" id="reminderSlot"></div>
+  <div class="board" id="board"></div>
+  <div class="foot"><span>承诺追踪 · 方法论工具，不构成投资建议</span><span>提醒 ≠ 建议</span></div>
+</div>
+
+<!-- BOARD-DATA-START -->
+<script>
+window.BOARD_DATA = __BOARD_DATA_JSON__;
+</script>
+<!-- BOARD-DATA-END -->
+
+<script>
+(function(){
+  var D = window.BOARD_DATA || {};
+  var list = D.commitments || [];
+  var counts = D.counts || {};
+  var STATES = ["持有中","接近证伪线","待复盘","已归档"];
+  var SKEY = {"持有中":"holding","接近证伪线":"near","待复盘":"review","已归档":"archived"};
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function fmtDate(d){if(!d)return "未设日期";var p=d.split("-");return p[0]+"年"+(+p[1])+"月"+(+p[2])+"日";}
+  function fmtT(t){if(!t)return "";var d=new Date(t);if(isNaN(d))return t;return d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日 "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);}
+  function fmtDist(x){if(x==null)return "—";return (x>0?"+":"")+x+"%";}
+  function fmtPx(x){return x==null?"—":Number(x).toFixed(2);}
+  document.getElementById("subName").textContent = D.display_name || D.subscriber || "";
+  document.getElementById("syncTime").textContent = "引擎同步时间 · " + fmtT(D.engine_run_at);
+  // 测试/真实标识：测试 chrome 只在虚拟用户时出现，真实用户看到如实文案
+  var isVirtual = !!D.virtual;
+  document.getElementById("noticeMain").textContent = isVirtual
+    ? "本看板数据由承诺追踪引擎自动生成，当前全部为测试数据，不构成任何投资建议。"
+    : "本看板数据由承诺追踪引擎自动生成，展示你的真实承诺记录，不构成任何投资建议。";
+  if (isVirtual) { document.title += "（测试）"; }
+  else {
+    var tb = document.getElementById("testBadge"); if (tb) tb.style.display = "none";
+    var vo = document.getElementById("virtualOnly"); if (vo) vo.style.display = "none";
+  }
+  // 提醒横幅槽：每条待复盘承诺一条
+  var rs = document.getElementById("reminderSlot"), rh = "";
+  list.filter(function(c){return c.state==="待复盘";}).forEach(function(c){
+    rh += '<div class="remind-banner"><div class="remind-tag">⏰ 证伪线触发 · 提醒已送达</div>'
+      + '<div class="remind-q">你当时说的，还算数吗？</div>'
+      + '<div class="recall"><div><b>标的：</b>'+esc(c.name)+'（'+esc(c.ticker)+'）</div>'
+      + '<div><b>当时的逻辑：</b>'+esc(c.logic)+'</div>'
+      + '<div><b>你写下的证伪条件：</b>'+esc(c.falsify_condition)+'（证伪价 '+fmtPx(c.falsify_price)+'）</div></div></div>';
+  });
+  rs.innerHTML = rh;
+  // 四列看板
+  var bh = "";
+  STATES.forEach(function(st){
+    var items = list.filter(function(c){return c.state===st;});
+    var cards = items.length ? items.map(function(c,idx){
+      var n = list.indexOf(c)+1;
+      var tl = (c.timeline||[]).map(function(e){return '<li><span class="t">'+esc(fmtT(e.t))+'</span>'+esc(e.text)+'</li>';}).join("");
+      var foot = "";
+      if(st==="已归档"){
+        foot = '<div class="archived-mark"><span>✓</span><span>'+esc(c.review_note||"已归档")+'</span></div>';
+      } else if(st==="待复盘"){
+        foot = '<div class="card-foot"><span class="wait-chip">⏰ 提醒已送达 · 等待复盘回复</span></div>';
+      } else {
+        foot = '<div class="card-foot"><button class="tl-btn" data-tl="'+esc(c.id)+'">时间线（'+(c.timeline||[]).length+'）</button></div>';
+      }
+      var tlBtn = (st==="已归档"||st==="待复盘")
+        ? '<div class="card-foot" style="margin-top:8px"><button class="tl-btn" data-tl="'+esc(c.id)+'">时间线（'+(c.timeline||[]).length+'）</button></div>' : "";
+      return '<div class="commitment-card" id="card-'+esc(c.id)+'">'
+        + '<div class="card-top"><span class="card-kicker">承诺 #'+("0"+n).slice(-2)+'</span><span class="card-tag">'+(D.virtual?"测试":"引擎同步")+'</span></div>'
+        + '<h3 class="card-title">'+esc(c.name)+'<span class="ticker">'+esc(c.ticker)+'</span></h3>'
+        + '<dl class="card-fact">'
+        + '<dt>买入逻辑</dt><dd>'+esc(c.logic)+'</dd>'
+        + '<dt>证伪条件</dt><dd>'+esc(c.falsify_condition)+'</dd>'
+        + '<dt>证伪价</dt><dd>'+fmtPx(c.falsify_price)+'</dd>'
+        + '<dt>现价</dt><dd>'+fmtPx(c.current_price)+'</dd>'
+        + '<dt>距证伪线</dt><dd class="dist"><b>'+esc(fmtDist(c.dist_pct))+'</b></dd>'
+        + '<dt>跟踪变量</dt><dd>'+esc(c.variables)+'</dd>'
+        + '</dl>'
+        + '<div class="card-date">复盘日 · '+esc(fmtDate(c.review_date))+'</div>'
+        + foot + tlBtn
+        + '<div class="timeline" id="tl-'+esc(c.id)+'"><ul>'+tl+'</ul></div>'
+        + '</div>';
+    }).join("") : '<div class="empty">暂无承诺</div>';
+    bh += '<section class="column" data-s="'+SKEY[st]+'"><div class="col-head"><h2>'+st+'</h2><span class="count">'+(counts[st]||0)+'</span></div><div class="cards">'+cards+'</div></section>';
+  });
+  document.getElementById("board").innerHTML = bh;
+  document.querySelectorAll(".tl-btn").forEach(function(b){
+    b.addEventListener("click",function(){
+      var el = document.getElementById("tl-"+b.getAttribute("data-tl"));
+      if(el) el.classList.toggle("open");
+    });
+  });
+})();
+</script>
+
+<footer class="disclaimer">Pact 守约看板｜个人投资纪律记录，仅供本人复盘，不构成任何投资建议。</footer>
+</body>
+</html>

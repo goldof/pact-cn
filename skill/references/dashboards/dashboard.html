@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pact 守约 · 看板</title>
+<style>
+  /* Pact 守约唯一自适应看板（v0.2.2）
+     agent 只填 id 为 pact-data 的 JSON 数据块，
+     其余一律不许改。JS 按数据与屏幕自适应渲染。 */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+         background: #0f1419; color: #e8eaed; padding: 24px; max-width: 900px; margin: 0 auto;
+         -webkit-text-size-adjust: 100%; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: #8a94a0; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi { background: #1a2129; border-radius: 10px; padding: 14px 8px; text-align: center; }
+  .kpi .n { font-size: 28px; font-weight: 800; }
+  .kpi .l { font-size: 12px; color: #8a94a0; margin-top: 4px; }
+  .k-hold .n { color: #5fd39a; } .k-warn .n { color: #f0b429; }
+  .k-todo .n { color: #f27a7a; } .k-done .n { color: #8a94a0; }
+  .group { margin-bottom: 20px; }
+  .group > h2 { font-size: 15px; margin-bottom: 10px; color: #aeb8c2; }
+  .group.alert > h2 { color: #f27a7a; }
+  .card { background: #1a2129; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px;
+          border-left: 4px solid #5a636e; }
+  .card.s-hold { border-left-color: #5fd39a; } .card.s-warn { border-left-color: #f0b429; }
+  .card.s-todo { border-left-color: #f27a7a; } .card.s-done { border-left-color: #5a636e; opacity: .75; }
+  .chead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .csym { font-weight: 700; font-size: 15px; }
+  .csym .code { color: #5a636e; font-weight: 400; font-size: 13px; }
+  .pill { font-size: 12px; padding: 2px 10px; border-radius: 20px; white-space: nowrap; }
+  .pill.s-hold { background: rgba(95,211,154,.15); color: #5fd39a; }
+  .pill.s-warn { background: rgba(240,180,41,.15); color: #f0b429; }
+  .pill.s-todo { background: rgba(242,122,122,.15); color: #f27a7a; }
+  .pill.s-done { background: rgba(138,148,160,.15); color: #8a94a0; }
+  .prices { font-size: 14px; margin-bottom: 10px; }
+  .prices .basis { color: #8a94a0; font-size: 12px; }
+  /* 距离尺：0% = 证伪价（红刻度），±3% = 预警线（黄刻度），圆点 = 现价位置 */
+  .scale { position: relative; height: 26px; margin: 6px 0 2px; }
+  .scale .track { position: absolute; left: 0; right: 0; top: 11px; height: 4px; background: #2a323b; border-radius: 2px; }
+  .scale .tick { position: absolute; top: 6px; width: 2px; height: 14px; }
+  .scale .tick.zero { background: #f27a7a; }
+  .scale .tick.warn { background: #f0b429; }
+  .scale .dot { position: absolute; top: 8px; width: 10px; height: 10px; border-radius: 50%;
+                background: #e8eaed; transform: translateX(-50%); box-shadow: 0 0 6px rgba(232,234,237,.6); }
+  .scale .lbl { position: absolute; top: -2px; font-size: 10px; color: #8a94a0; transform: translateX(-50%); white-space: nowrap; }
+  .distline { font-size: 13px; color: #8a94a0; margin-bottom: 8px; }
+  .distline b { font-size: 15px; }
+  .distline b.neg { color: #f0b429; } .distline b.pos { color: #5fd39a; } .distline b.hit { color: #f27a7a; }
+  .cond { font-size: 13px; color: #c8cfd8; margin-bottom: 6px; }
+  .cond::before { content: "证伪条件："; color: #8a94a0; }
+  .meta { font-size: 12px; color: #8a94a0; line-height: 1.7; }
+  .extra { font-size: 12px; color: #8a94a0; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #2a323b; }
+  .extra::before { content: "另记（不进证伪格）："; color: #5a636e; }
+  .empty-board { background: #1a2129; border-radius: 12px; padding: 40px 24px; text-align: center; color: #8a94a0; }
+  .empty-board .big { font-size: 40px; margin-bottom: 12px; }
+  .empty-board p { font-size: 14px; line-height: 1.8; }
+  .foot { margin-top: 24px; font-size: 12px; color: #5a636e; line-height: 1.8; }
+  @media (max-width: 640px) {
+    body { padding: 16px 12px; }
+    h1 { font-size: 18px; }
+    .kpis { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi .n { font-size: 24px; }
+    .card { padding: 12px; }
+    .chead { align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<h1>🛡 Pact 守约 · 看板</h1>
+<div class="sub" id="gen"></div>
+<div id="board"></div>
+<div class="foot">提醒≠建议：本看板只记录你的承诺与证伪线，不输出任何买卖判断。<br>现价口径：收盘价（前复权）为触发判定口径；盘中价仅标注、不触发。</div>
+
+<script type="application/json" id="pact-data">
+{
+  "generated_at": "",
+  "commitments": [
+    // agent 用真实承诺替换整个数组。字段：
+    // symbol（标的名）, code（代码）, direction（做多/做空）,
+    // current（现价）, price_basis（口径标注，如"收盘 2026-09-30"/"盘中 13:53"/"停牌"）,
+    // falsify（证伪价）, falsify_condition（证伪条件原话）,
+    // distance_pct（距证伪线%，(现价-证伪价)/证伪价*100，做多为负表示下方）,
+    // status（持有中/接近证伪线/待复盘/已归档）,
+    // track_vars（数组）, review_date（复盘日期）, extra（另记，可空）
+    // 示例：
+    // { "symbol": "东方财富", "code": "300059", "direction": "做多",
+    //   "current": 17.77, "price_basis": "收盘 2026-09-30",
+    //   "falsify": 15.00, "falsify_condition": "跌破15元就over了",
+    //   "distance_pct": -15.9, "status": "持有中",
+    //   "track_vars": ["妙想大模型收入", "两市成交额+融资余额"],
+    //   "review_date": "2026-11-05", "extra": "目标价50元（上行复盘触发点）" }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  var raw = document.getElementById('pact-data').textContent;
+  // 去掉 // 注释行（JSON 本身不支持注释，模板里写给 agent 看的）
+  raw = raw.split('\n').filter(function (l) { return l.trim().indexOf('//') !== 0; }).join('\n');
+  var data = JSON.parse(raw);
+  var list = data.commitments || [];
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  var ORDER = ["待复盘", "接近证伪线", "持有中", "已归档"];
+  var CLS = { "持有中": "hold", "接近证伪线": "warn", "待复盘": "todo", "已归档": "done" };
+  var counts = {}; ORDER.forEach(function (s) { counts[s] = 0; });
+  list.forEach(function (c) { if (counts[c.status] !== undefined) counts[c.status]++; });
+
+  document.getElementById('gen').textContent =
+    '生成时间：' + (data.generated_at || new Date().toLocaleString('zh-CN')) +
+    ' ｜ 共 ' + list.length + ' 条承诺';
+
+  var board = document.getElementById('board');
+  if (!list.length) {
+    board.innerHTML = '<div class="empty-board"><div class="big">📝</div>' +
+      '<p>还没有被跟踪的承诺。<br>对 agent 说「记承诺」，写下第一条证伪线。</p></div>';
+    return;
+  }
+
+  // KPI
+  var kpiHtml = '<div class="kpis">';
+  ORDER.forEach(function (s) {
+    kpiHtml += '<div class="kpi k-' + CLS[s] + '"><div class="n">' + counts[s] +
+      '</div><div class="l">' + s + '</div></div>';
+  });
+  board.innerHTML = kpiHtml + '</div>';
+
+  // 距离尺：自适应量程；0% = 证伪价红刻度，±3% = 预警线黄刻度，圆点 = 现价位置
+  function scaleBar(c) {
+    var isLong = c.direction === "做多";
+    var lo = Math.min(isLong ? -20 : -5, c.distance_pct - 5);
+    var hi = Math.max(isLong ? 5 : 20, c.distance_pct + 5);
+    function pos(v) { return Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100)); }
+    var zeroAt = pos(0).toFixed(1), warnAt = pos(isLong ? -3 : 3).toFixed(1);
+    var curAt = pos(c.distance_pct).toFixed(1);
+    var warnLbl = isLong ? "-3%" : "+3%";
+    return '<div class="scale" aria-hidden="true">' +
+      '<div class="track"></div>' +
+      '<div class="tick zero" style="left:' + zeroAt + '%"></div>' +
+      '<div class="lbl" style="left:' + zeroAt + '%">0%证伪价</div>' +
+      '<div class="tick warn" style="left:' + warnAt + '%"></div>' +
+      '<div class="lbl" style="left:' + warnAt + '%">' + warnLbl + '预警</div>' +
+      '<div class="dot" style="left:' + curAt + '%"></div>' +
+      '</div>';
+  }
+
+  ORDER.forEach(function (s) {
+    var items = list.filter(function (c) { return c.status === s; });
+    var g = document.createElement('div');
+    g.className = 'group' + (s === "待复盘" ? ' alert' : '');
+    var html = '<h2>' + s + '（' + items.length + '）</h2>';
+    items.forEach(function (c) {
+      var isLong = c.direction === "做多";
+      var safe = isLong ? c.distance_pct > 3 : c.distance_pct < -3;
+      var dc = c.status === "待复盘" ? "hit" : (safe ? "pos" : "neg");
+      html += '<div class="card s-' + CLS[c.status] + '">' +
+        '<div class="chead"><span class="csym">' + esc(c.symbol) +
+        ' <span class="code">' + esc(c.code) + ' · ' + esc(c.direction) + '</span></span>' +
+        '<span class="pill s-' + CLS[c.status] + '">' + esc(c.status) + '</span></div>' +
+        '<div class="prices">现价 ' + esc(c.current) +
+        ' <span class="basis">（' + esc(c.price_basis) + '）</span> ｜ 证伪价 ' + esc(c.falsify) + '</div>' +
+        scaleBar(c) +
+        '<div class="distline">距证伪线 <b class="' + dc + '">' + esc(c.distance_pct) + '%</b></div>' +
+        '<div class="cond">「' + esc(c.falsify_condition) + '」</div>' +
+        '<div class="meta">跟踪变量：' + esc((c.track_vars || []).join('、')) +
+        ' ｜ 复盘日期：' + esc(c.review_date) + '</div>' +
+        (c.extra ? '<div class="extra">' + esc(c.extra) + '</div>' : '') +
+        '</div>';
+    });
+    g.innerHTML = html;
+    board.appendChild(g);
+  });
+})();
+</script>
+</body>
+</html>
