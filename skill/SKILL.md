@@ -1,9 +1,16 @@
 ---
 name: pact
+version: 0.4.1
+display_name: Pact 守约（中国版）
+display_name_en: Pact
 description: |
   Pact 守约（中国版）：A股交易防反悔工具。开仓前写下证伪线，破线时把你当时亲口说的话递回来——只做记录、提醒、复盘归档，绝不输出买卖判断，数据只存本机，跑在 WorkBuddy 本地，仅支持 A 股。
   当用户提交交易约定、设定证伪线、查询约定状态、证伪线被触发或到期、要求复盘归档时触发。
   典型触发词包含："帮我记一个约定"、"证伪线"、"我的约定现在怎么样"、"到期复盘"、"当时是怎么说的"、"删了我那条约定"（旧词"记承诺/承诺"同样识别）。
+description_zh: |
+  Pact 守约（中国版）：A股交易防反悔工具。开仓前写下证伪线，破线时把你当时亲口说的话递回来——只做记录、提醒、复盘归档，绝不输出买卖判断，数据只存本机，跑在 WorkBuddy 本地，仅支持 A 股。
+description_en: |
+  Pact (China Edition): an anti-regret tool for A-share traders. Write down your invalidation line before entry; when price breaks it, your own words are handed back to you. It only records, reminds, and archives reviews — never gives buy/sell advice. Data stays on your machine, runs locally on WorkBuddy, A-shares only.
 ---
 
 # Pact 守约 — 生命周期的保管人
