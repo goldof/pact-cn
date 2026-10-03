@@ -1,4 +1,4 @@
-# RELEASE.md — 分发注意事项（pact-cn v0.4.0）
+# RELEASE.md — 分发注意事项（pact-cn v0.4.1）
 
 ## 许可
 本包采用 MIT License（见 `LICENSE`）。接收方拥有使用、修改、再分发的完整授权。
