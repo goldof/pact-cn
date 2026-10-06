@@ -7,7 +7,7 @@
 铁律：只做记录、提醒、归档。绝不输出买卖判断。提醒≠建议。
 公开行情只读。所有提醒文案引用用户原话（证伪条件+证伪价）。
 
-数据文件：~/.chengnuo/commitments.json（可用 CHENGNUO_DATA 环境变量覆盖）
+数据目录：PACT_CN_HOME（跨环境持久化解析，见 paths.py；可用 CHENGNUO_DATA 环境变量直接覆盖台账路径）
 行情源：自建免费价格源（scripts/prices.py：腾讯 -> 新浪 -> 网易 fallback），
   无鉴权、无登录、无费用、无需我方提供任何数据服务——用户在自己机器上跑。
   fetch_prices 是唯一与行情源耦合的函数，换数据源只改它。
@@ -25,10 +25,16 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 
 BJ = timezone(timedelta(hours=8))
-# 中国版数据主目录：环境变量 PACT_CN_HOME，默认 ~/.pact-cn。
-# 所有数据（commitments.json、pact_events.db）只落本机，不出境。
-PACT_CN_HOME = os.environ.get("PACT_CN_HOME",
-                              os.path.expanduser("~/.pact-cn"))
+# 中国版数据主目录：跨环境持久化解析（server/paths.py）。
+# 优先级：$PACT_CN_HOME（已有安装沿用，最高优先）> $PACT_HOME > /workspace/.pact-cn（云端持久卷，重置保留）
+#        > ~/.pact-cn（本地回退）。云端沙盒 $HOME 不持久，禁止硬编码 ~/.pact-cn。
+# 所有数据（commitments.json、pact_events.db）只落本机/云端用户卷，不出境。
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+from paths import resolve_data_dir, ensure_compat_symlink  # noqa: E402
+PACT_CN_HOME = os.environ.get("PACT_CN_HOME") or resolve_data_dir()
+ensure_compat_symlink(PACT_CN_HOME)  # ~/.pact-cn 软链自愈；失败仅 stderr 告警，不影响主流程
 DATA_PATH = os.environ.get("CHENGNUO_DATA",
                            os.path.join(PACT_CN_HOME, "commitments.json"))
 WARN_PCT = 0.03  # 距证伪线 ≤3% 进入"接近证伪线"（skill 协议）
@@ -157,6 +163,7 @@ def main(argv):
     today = datetime.now(BJ).date()
     summary = {"checked_at": now_iso(), "transitions": [], "reminders": [], "errors": []}
     os.makedirs(os.path.dirname(DATA_PATH), exist_ok=True)
+    # 缺失台账视为​​空台账（自动建空文件），不报错；只有"文件损坏"才走 errors（见行为契约 3）
     if not os.path.isfile(DATA_PATH):
         with open(DATA_PATH, "w", encoding="utf-8") as f:
             json.dump({"commitments": []}, f, ensure_ascii=False, indent=2)
