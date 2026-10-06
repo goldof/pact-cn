@@ -46,6 +46,26 @@ check.py 输出 JSON 到 stdout：有 `reminders` 时，WorkBuddy 按 skill 协�
 
 > 注意：定时任务命令里的路径是本机特定的——文档里的是示例，接收方须按自己的实际路径重建。删 skill 不会自动停任务，卸载前先停任务。
 
+### 4.1 云端沙盒持久化（WorkBuddy 云端定时任务）
+
+云端沙盒的 `$HOME`（`/root`）在环境重置后会被清空，台账不能放在 `~/.pact-cn`。
+`server/check.py` 已接入 `server/paths.py`，启动时按以下优先级解析数据目录：
+
+1. `$PACT_CN_HOME`（已有安装沿用，最高优先）
+2. `$PACT_HOME`
+3. `/workspace/.pact-cn`（云端持久卷，重置后保留）
+4. `~/.pact-cn`（本地回退）
+
+云端定时任务请用路径无关启动器（`pact-inspect` 须与 `check.py`、`paths.py` 在同一持久目录，
+如 `/workspace/.pact-cn/`），命令示例：
+
+```bash
+PACT_HOME=/workspace/.pact-cn /workspace/.pact-cn/pact-inspect > /workspace/.pact-cn/last_check.json
+```
+
+启动时会自动在 `~/.pact-cn` 建软链指向实际数据目录（自愈；旧真实目录不会被覆盖）。
+首次启动如需把旧 `~/.pact-cn` 数据并入，可手动跑一次 `python3 -c "from paths import migrate_legacy; migrate_legacy(force=True)"`。
+
 ## 5. 推送
 
 在 WorkBuddy 里打开定时任务的推送（微信/系统通知），提醒文案才能"递"到你手上。
